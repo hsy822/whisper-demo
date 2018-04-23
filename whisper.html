@@ -8,16 +8,16 @@
 <link href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css' rel='stylesheet' type='text/css'>
 
 <body class="container">
-  <h1>whisper test</h1>
+  <h1>Whisper - The Darkness Chat</h1>
   <div class="form-row">
       <div class="form-group">
-        <label for="i_topic">Room Code</label>
-        <input type="text" class="form-control" id="i_topic" />
+        <label for="i_topic">Topic</label>
+        <input type="text" class="form-control" id="i_topic" style="width: 50%;display:inline-block"/>
+        <button type="button" name="button" id="set_btn" class="btn btn-success" style="display:inline-block">SET</button>
       </div>
-      <button type="button" name="button" id="join_btn" class="btn btn-success">입장</button>
   </div>
-  <div class="row">
-      <div id="log">
+  <div class="form-row" style="min-height:200px; border:1px solid grey; margin: 10px 0">
+      <div id="log" style="padding: 0 20px">
       </div>
   </div>
   <div class="form-row">
@@ -25,56 +25,59 @@
         <label for="t_payload">Message</label>
         <textarea id="t_payload" class="form-control"></textarea>
       </div>
-      <button type="button" name="button" id="send_btn" class="btn btn-primary">보내기</button>
+      <button type="button" name="button" id="send_btn" class="btn btn-primary">SEND</button>
   </div>
 </body>
 
 <script>
-  // web3 연동
+
+  // Geth - Web3 연결
   var Web3 = require('web3');
   var web3 = new Web3();
-  web3.setProvider(new web3.providers.HttpProvider("http://192.168.0.106:8545"));
+  web3.setProvider(new web3.providers.HttpProvider("http://192.168.0.102:8545"));
 
   let i_topic;
   let t_payload;
 
   let log_list = document.getElementById("log")
 
-  let btn_join = document.getElementById("join_btn")
+  let btn_set = document.getElementById("set_btn")
   let btn_send = document.getElementById("send_btn")
 
-  // 방이름을 입력하여 해당 Topic으로 입장
-  let rooms = []
-  btn_join.onclick = () => {
-
+  // topic를 설정하고, 메세지 수신하기 위한 filtering 함수 호출
+  btn_set.onclick = () => {
     log_list.innerHTML = ''
     i_topic = document.getElementById("i_topic").value
+    alert(i_topic)
+
     filtering()
   }
 
   btn_send.onclick = () => {
     t_payload = document.getElementById("t_payload").value
 
+    // 메세지 전송 함수
     web3.shh.post(
       {
-        topics : [i_topic],
-        payload : web3.fromUtf8(t_payload),
-        ttl : web3.fromDecimal("100")
+        topics : [i_topic], // 톻신 주체 구분 값
+        payload : web3.fromUtf8(t_payload), // 데이터(메세지)
+        ttl : web3.fromDecimal("100") // Time-To-Live: 메세지 유효 시간(초)
       }
     )
   }
 
-  // filter를 이용해 topic들의 변화를 감지 한다.
+  // filter watch를 이용해 topic들의 변화를 감지 한다.
   let filtering = () => {
     let filter = web3.shh.filter({ topics: [i_topic] });
-    
+
+    // 메세지 수신 함수
     filter.watch((error, result) => {
       if(!error) {
         var topics = filter.options.topics ;
         var message = web3.toUtf8(result.payload);
-        log_list.innerHTML += "<div> Topic: " + web3.toUtf8(parseInt(topics).toString(16)) + "</div>"
+        log_list.innerHTML += "<div class='row'><div> Topic: " + web3.toUtf8(parseInt(topics).toString(16)) + "</div>"
                             + "<div> " + new Date(result.sent*1000) + "</div>"
-                            + "<div> " + message + "</div>";
+                            + "<div> " + message + "</div></div><br />";
         }
     })
   }
